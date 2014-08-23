@@ -11,9 +11,16 @@ type Message struct {
     Playerkey string `json:"playerkey"`
     Action string `json:"action"`
     Value string `json:"value"`
+    Missing []string `json:"missing"`
+    Cards []string `json:"cards"`
+    Card_Text []string `json:"card_text"`
+    PointList []Points `json:"points"`
+    Status string `json:"status"`
+    IsReady bool `json:"is_ready"`
+    Played bool `json:"played"`
 }
 
-func handleconnection(conn net.Conn) {
+func Handle(conn net.Conn) {
     sock := bufio.NewReader(conn)
     var err error
     var m Message
@@ -36,14 +43,14 @@ func handleconnection(conn net.Conn) {
 func main() {
     listener, err := net.Listen("tcp", ":12345")
     if err != nil {
-        panic("nope")
+        panic(err)
     }
 
     for {
         conn, err := listener.Accept()
         if err != nil {
-            panic("noper")
+            panic(err)
         }
-        go handleconnection(conn)
+        go Handle(conn)
     }
 }
