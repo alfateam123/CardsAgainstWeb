@@ -1,0 +1,25 @@
+#!/usr/bin/python3
+
+import argparse
+from sys import argv
+#from cah import Game
+
+def create_parser():
+  parser = argparse.ArgumentParser(description="Python3 client for Cards Against humanity")
+  parser.add_argument("--playernick", type=str, help="the player name")
+  parser.add_argument("--server", type=str, help="servername:port") 
+  return parser
+
+def setup():
+  #print( argv )
+  args = create_parser().parse_args(argv[1:])
+  #print(args)
+  print("the chosen nick is:", args.playernick)
+  print("the chosen server is:", args.server)
+
+def start_game_cycle():
+  setup()
+  #teardown()
+
+if __name__=="__main__":
+  start_game_cycle()
