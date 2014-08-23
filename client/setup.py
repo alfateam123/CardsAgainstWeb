@@ -9,8 +9,8 @@ setup(
     scripts=['bin/play_cah'],
     #url='http://pypi.python.org/pypi/TowelStuff/',
     license='../LICENSE',
-    description='CAH',
-    long_description=open('../README.txt').read(),
+    description='A simple client for Cards Against Humanity multiplayer game',
+    long_description=open('../README.md').read(),
     #install_requires=[
     #],
 )
