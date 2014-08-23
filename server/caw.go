@@ -8,17 +8,17 @@ import (
 )
 
 type Message struct {
-    playerkey string `json:"playerkey"`
-    action string `json:"action"`
-    value string `json:"value"`
+    Playerkey string `json:"playerkey"`
+    Action string `json:"action"`
+    Value string `json:"value"`
 }
 
 func handleconnection(conn net.Conn) {
     sock := bufio.NewReader(conn)
     var err error
+    var m Message
 
     for {
-        m := new(Message)
         dec := json.NewDecoder(sock)
         if err != nil {
             fmt.Println(err)
