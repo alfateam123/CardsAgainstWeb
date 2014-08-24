@@ -1,0 +1,76 @@
+[=> to the server, <= to the client]
+
+
+Connessione 
+=> { playerkey: “nick”, action: “connect” }
+<= { playerkey: “nick”, action: “connect”, value: “accepted” }
+<= { playerkey: “nick”, action: “connect”, value: “nick already registered” }
+<= { playerkey: “nick”, action: “connect”, value: “generic error” }
+
+
+Disconnessione
+=> { playerkey: “nick”, action: “disconnect” }
+<= { playerkey: “nick”, action: “disconnect”, value: “accepted”} #al singolo giocatore
+<= { playerkey: “nick”, action: “disconnect_notice”, value: “disconnected_nick”} #a tutti gli altri
+
+
+Inizio partita 
+=> { playerkey: “nick”, action: “ready”, value: “true” }
+<= { playerkey: “nick”, action: “ready”, value: “accepted”, missing: [“nick”, “nick”] }
+(se già inviato il comando di “ready”)
+<= { playerkey: “nick”, action: “ready”, value: “already_ready”, missing: [“nick”, “nick”] }
+
+
+=> { playerkey: “nick”, action: “ready”, value: “false” }
+<= { playerkey: “nick”, action: “ready”, value: “accepted_not_ready”, missing: [“nick”, “nick”] }
+(se già inviato il comando di “not_ready”)
+<= { playerkey: “nick”, action: “ready”, value: “already_not_ready”, missing: [“nick”, “nick”] }
+
+
+<= { playerkey: “nick”, action: “card_distribution”, cards: [“card”, “card” ] }
+=> { playerkey: “nick”, action: “card_distributed”, value: “success” }
+
+
+Richiesta carta
+=> { playerkey: “nick”, action: “card_draw”}
+<= { playerkey: “nick”, action: “card_drawn”, value: “lol”}
+(partita finita)
+<= { playerkey: “nick”, action: “card_drawn”, error: “match finished”}
+(partita non iniziata)
+<= { playerkey: “nick”, action: “card_drawn”, error: “match not started”}
+
+
+Inizio turno
+<= { playerkey: “nick”, action: “turn_start” }
+=> { playerkey: “nick”, action: “turn_start”, value: “ready” }
+<= { playerkey: “nick”, action: “black_card”, value: “if the world ends tonight, i want to ___ right now”}
+
+
+Giocare una carta
+=> { playerkey: “nick”, action: “play_card”, value: “fuck jennifer lawrence” }
+<= { playerkey: “nick”, action: “card_played”, value: “fuck jennifer lawrence”, cards_remaining_to_play: 0/1/2 }
+<= { playerkey: “nick”, action: “card_played”, error: “generic error” }
+(non puoi giocare altre carte)
+<= { playerkey: “nick”, action: “card_played”, error: “too much clutter” } (:P s/clutter/cards/)
+
+
+
+
+Fine turno
+<= { playerkey: “nick”, action: “vote”, possible_votes: { “player1”: “card1”, “player2”: “card2” } }
+=> { playerkey: “nick”, action:” vote”, value: “turn_winner” }
+<= { playerkey: “nick”, action: “turn_end”, value: “real_turn_winner”, points: [ { playerkey: “nick1”, points: 1 }, { playerkey: “nick2”, points: 3 } ] }
+
+
+Fine partita
+<= { playerkey: “nick”, action: “match_end”, winner: “winner_name”, points: [ { playerkey: “nick1”, points: 1 }, { playerkey: “nick2”, points: 3 } ] }
+=> { playerkey: “nick”, action: “match_end”, value: “accepted” }
+
+
+
+
+Player status
+=> { playerkey: “nick”, action: “player_status”, nick: “random_nick”}
+<= { playerkey: “nick”, action: “player_status”, status: {player_nick: “random_nick”, is_ready: true/false, played: true/false, card_text: [“fuck jennifer lawrence”]} } #card_text empty if played=false, non-empty otherwise
+<= { playerkey: “nick”, action: “player_status”, value: “nick not found”}
+<= { playerkey: “nick”, action: “player_status”, value: “generic error”}
