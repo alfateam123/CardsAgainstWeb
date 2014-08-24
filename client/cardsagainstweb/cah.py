@@ -18,6 +18,11 @@ class Player(object):
     self.cards[-1], self.cards[card_index] = self.cards[card_index], self.cards[-1]
     self.cards.pop()
 
+  def see_card_at(self, card_index):
+    if not self.is_our_player:
+      raise AttributeError("you can't see cards of another players!")
+    return cards[card_index]
+
   def add_card(self, card_text):
     if not self.is_our_player:
       raise AttributeError("you can't call Player.add_card on a player you don't control!")
@@ -28,6 +33,7 @@ class Game(object):
     self.black_card = ""
     self.player = None
 
+  #def 
 
 
   
