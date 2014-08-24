@@ -2,7 +2,7 @@
 
 import argparse
 from sys import argv
-#from cah import Game
+from cardsagainstweb.threads import GameState, CommunicationThread, UserInterface
 
 def create_parser():
   parser = argparse.ArgumentParser(description="Python3 client for Cards Against humanity")
@@ -10,15 +10,24 @@ def create_parser():
   parser.add_argument("--server", type=str, help="servername:port") 
   return parser
 
+gs = GameState()
+ui = UserInterface(gs)
+ct = CommunicationThread(gs)
+
 def setup():
   #print( argv )
   args = create_parser().parse_args(argv[1:])
   #print(args)
   print("the chosen nick is:", args.playernick)
   print("the chosen server is:", args.server)
+  gs.player_name = args.playernick
+  ct.server, ct.port = args.server.split(":")
+  print("___")
 
 def start_game_cycle():
   setup()
+  ct.start()
+  ui.start()
   #teardown()
 
 if __name__=="__main__":
