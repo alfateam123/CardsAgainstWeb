@@ -20,6 +20,7 @@ class GameState():
     self.messages = self._init_queues()
     self.player = None
     self.black_card = ""
+    self.match_ready = False
 
   def _init_queues(self):
     return {
@@ -52,9 +53,8 @@ class GameState():
 
   def connect(self, message):
     """ from server """
-    if doc["action"] == "connect":
-      return (doc["value"] == "accepted", doc["value"])
-    else: raise ValueError("[GameState.connect] action %s should not come now!"%doc["action"])
+    self.add_message(message, self.UserInterface)
+    #else: raise ValueError("[GameState.connect] action %s should not come now!"%message["action"])
  
   def disconnect_request(self, message):
     """ from user interface """
@@ -62,7 +62,7 @@ class GameState():
                       self.CommunicationThread)
 
   def disconnect(self, message):
-    self.add_message({"event": "disconnect", "value": doc["value"]})
+    self.add_message({"event": "disconnect", "value": message["value"]})
 
   def disconnect_notice(self, message):
     """handled automatically, from server """
@@ -71,12 +71,13 @@ class GameState():
 
   def start_match(self, message):
     """ from user interface """
-    self.add_message({"playerkey": self.player.name, "action":"ready", "value":True},
+    self.add_message({"playerkey": self.player.name, "action":"ready", "value": message["ready"]},
                      self.CommunicationThread)
-    doc = self.get_message(self.GameState, blocking=True)
-    if doc["action"] == "ready":
-      return (doc["value"] == "accepted_not_ready", doc["value"])
-    else: raise ValueError("[GameState.start_match] action %s should not come now!"%doc["action"])
+
+  def ready(self, message):
+    """ from server """
+    self.match_ready = message["value"] in ("accepted", "already_ready")
+    self.add_message(message, self.UserInterface)
 
   def card_distribution(self, message):
     """ from server """
@@ -169,9 +170,11 @@ class CommunicationThread(Thread):
     try:
       while True:
         doc = self.gs.get_message(self.gs.CommunicationThread)
-        print("got doc!", doc)
+        #print("[CommunicationThread.run] got doc!", doc)
         if doc:
           self.s.send(bytes(json.dumps(doc), "UTF-8"))
+        else:
+          continue
         data = self.s.recv(1024)
         print( 'Received', repr(data))
         self.gs.add_message(json.loads(str(data, "UTF-8")), self.gs.GameState)
@@ -184,15 +187,36 @@ class UserInterface(Thread):
     Thread.__init__(self)
     self.gs = gamestate_obj
 
-  def run(self):
-    self.gs.add_message({"action": "connect_request", "playername": "alfa"}, self.gs.GameState)
+  def connect(self):
+    self.gs.add_message({"action": "connect_request", "playername": self.player_name}, self.gs.GameState)
+    doc = self.gs.get_message(self.gs.UserInterface, blocking=True)
+    if doc["value"] == "accepted":
+      print("Hi, %s, you're in!"%self.player_name)
+    else:
+      print("Uhm, something is wrong here!", doc[value])
+
+  def start_match(self):
+    is_input_ok, is_ready = False, None
+    while not is_input_ok:
+      a = input("Are you ready to start this match? (Y/N)")
+      is_input_ok, is_ready = (a in "YyNn"), (a in "Yy")
+    self.gs.add_message({"action": "start_match", "ready": is_ready}, self.gs.GameState)
     doc = self.gs.get_message(self.gs.UserInterface, blocking=True)
     print(doc)
+    #self.gs.get_message(self.gs.UserInterface, blocking=True) #waiting for cards
+
+  def wait_for_turn(self):
+    self.gs.get_message(self.gs.UserInterface, blocking=True)
+
+
+  def run(self):
+    self.connect()
     while True:
       #starting the match!
-      self.gs.add_message({
-        "action": "card_draw"
-        }, self.gs.GameState)
+      self.start_match()
+      while True:
+        self.wait_for_turn()
+      
 
 
 

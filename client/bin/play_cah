@@ -20,7 +20,7 @@ def setup():
   #print(args)
   print("the chosen nick is:", args.playernick)
   print("the chosen server is:", args.server)
-  gs.player_name = args.playernick
+  ui.player_name = args.playernick
   ct.server, ct.port = args.server.split(":")
   print("___")
 

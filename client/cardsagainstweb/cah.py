@@ -33,8 +33,6 @@ class Game(object):
     self.black_card = ""
     self.player = None
 
-  #def 
-
 
   
 
