@@ -30,6 +30,12 @@ type Message struct {
     Played bool `json:"played"`
 }
 
+func HandleError(err error) {
+    if err != nil {
+        fmt.Println(err)
+    }
+}
+
 func HandleNewConnection(conn net.Conn, players *[]Player) {
     sock := bufio.NewReader(conn)
     var m Message
@@ -42,20 +48,37 @@ func HandleNewConnection(conn net.Conn, players *[]Player) {
             continue
         }
         if m.Playerkey != "" && m.Action == "connect" {
-            var p Player
-            p.Nick = m.Playerkey
-            p.Socket = conn
-            *players = append(*players, p)
-
-            m.Value = "accepted"
-            response, err := json.Marshal(m)
-            if err != nil {
-                fmt.Println(err)
-            }
+            playerExists := false
             writer := bufio.NewWriter(conn)
-            writer.WriteString(string(response))
-            writer.Flush()
-            fmt.Println(players)
+
+            for _, pl := range *players {
+                if pl.Nick == m.Playerkey {
+                    playerExists = true
+                }
+            }
+
+            if !playerExists {
+                var p Player
+                p.Nick = m.Playerkey
+                p.Socket = conn
+                *players = append(*players, p)
+
+                m.Value = "accepted"
+                response, err := json.Marshal(m)
+                HandleError(err)
+
+                writer.WriteString(string(response))
+                writer.Flush()
+                fmt.Println("New player " + m.Playerkey + " connected!")
+            } else {
+                m.Value = "playerkey_already_present"
+                response, err := json.Marshal(m)
+                HandleError(err)
+
+                writer.WriteString(string(response))
+                writer.Flush()
+                fmt.Println("Someone tried to connect with the playerkey " + m.Playerkey + " but a player with that key was already connected.")
+            }
         } else {
             fmt.Println(m)
         }
@@ -65,15 +88,11 @@ func HandleNewConnection(conn net.Conn, players *[]Player) {
 func main() {
     var players []Player
     listener, err := net.Listen("tcp", ":12345")
-    if err != nil {
-        panic(err)
-    }
+    HandleError(err)
 
     for {
         conn, err := listener.Accept()
-        if err != nil {
-            panic(err)
-        }
+        HandleError(err)
         go HandleNewConnection(conn, &players)
     }
 }
