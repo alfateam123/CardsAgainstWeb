@@ -8,8 +8,10 @@ import (
 )
 
 type Player struct {
+    Connection net.Conn
     Nick string
-    Socket net.Conn
+    CardPlayed string
+    Ready bool
 }
 
 type Points struct {
@@ -38,50 +40,74 @@ func HandleError(err error) {
 
 func HandleNewConnection(conn net.Conn, players *[]Player) {
     sock := bufio.NewReader(conn)
+    expectedPlayers := 2
     var m Message
 
-    for {
-        dec := json.NewDecoder(sock)
-        err := dec.Decode(&m)
-        if err != nil {
-            fmt.Println(err)
-            continue
-        }
-        if m.Playerkey != "" && m.Action == "connect" {
-            playerExists := false
-            writer := bufio.NewWriter(conn)
+    dec := json.NewDecoder(sock)
+    err := dec.Decode(&m)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
 
-            for _, pl := range *players {
-                if pl.Nick == m.Playerkey {
-                    playerExists = true
-                }
+    if m.Playerkey != "" && m.Action == "connect" && len(*players) < expectedPlayers {
+        playerExists := false
+        writer := bufio.NewWriter(conn)
+
+        for _, pl := range *players {
+            if pl.Nick == m.Playerkey {
+                playerExists = true
             }
+        }
 
-            if !playerExists {
-                var p Player
-                p.Nick = m.Playerkey
-                p.Socket = conn
-                *players = append(*players, p)
+        if !playerExists {
+            var p Player
+            p.Nick = m.Playerkey
+            p.Connection = conn
+            *players = append(*players, p)
 
-                m.Value = "accepted"
-                response, err := json.Marshal(m)
-                HandleError(err)
+            m.Value = "accepted"
+            response, err := json.Marshal(m)
+            HandleError(err)
 
-                writer.WriteString(string(response))
-                writer.Flush()
-                fmt.Println("New player " + m.Playerkey + " connected!")
-            } else {
-                m.Value = "playerkey_already_present"
-                response, err := json.Marshal(m)
-                HandleError(err)
+            writer.WriteString(string(response))
+            writer.Flush()
+            fmt.Println("New player " + m.Playerkey + " connected! Total players connected: " + string(len(*players)) + " out of " + string(expectedPlayers) + " expected players.")
 
-                writer.WriteString(string(response))
-                writer.Flush()
-                fmt.Println("Someone tried to connect with the playerkey " + m.Playerkey + " but a player with that key was already connected.")
+            if len(*players) == expectedPlayers {
+                go StartGame(players)
             }
         } else {
-            fmt.Println(m)
+            m.Value = "playerkey_already_present"
+            response, err := json.Marshal(m)
+            HandleError(err)
+
+            writer.WriteString(string(response))
+            writer.Flush()
+            fmt.Println("Someone tried to connect with the playerkey " + m.Playerkey + " but a player with that key was already connected.")
         }
+    } else {
+        m.Value = "game_already_started"
+        response, err := json.Marshal(m)
+        HandleError(err)
+        sock := bufio.NewWriter(conn)
+        sock.WriteString(string(response))
+        sock.Flush()
+        fmt.Println("Player " + m.Playerkey + " tried to connect to a running game D:")
+    }
+}
+
+func StartGame(players *[]Player) {
+    var m Message
+    for _, pl := range *players {
+        m.Playerkey = pl.Nick
+        m.Action = "test"
+        response, err := json.Marshal(m)
+        HandleError(err)
+
+        sock := bufio.NewWriter(pl.Connection)
+        sock.WriteString(string(response))
+        sock.Flush()
     }
 }
 
